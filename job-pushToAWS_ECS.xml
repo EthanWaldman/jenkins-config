@@ -1,0 +1,56 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<project>
+  <actions/>
+  <description></description>
+  <keepDependencies>false</keepDependencies>
+  <properties>
+    <hudson.model.ParametersDefinitionProperty>
+      <parameterDefinitions>
+        <hudson.model.ChoiceParameterDefinition>
+          <name>appName</name>
+          <description></description>
+          <choices class="java.util.Arrays$ArrayList">
+            <a class="string-array">
+              <string>getWeather</string>
+            </a>
+          </choices>
+        </hudson.model.ChoiceParameterDefinition>
+      </parameterDefinitions>
+    </hudson.model.ParametersDefinitionProperty>
+  </properties>
+  <scm class="hudson.scm.NullSCM"/>
+  <canRoam>true</canRoam>
+  <disabled>false</disabled>
+  <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
+  <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
+  <triggers/>
+  <concurrentBuild>false</concurrentBuild>
+  <builders>
+    <hudson.tasks.Shell>
+      <command>export DOCKER_HOST=192.168.33.13:2375
+imageName=`echo ${appName} | tr &apos;[A-Z]&apos; &apos;[a-z]&apos;`
+/usr/local/bin/ecs-cli push ${imageName}
+FULL_IMAGE_REPO_NAME=`/usr/local/bin/aws ecr describe-repositories | grep \&quot;repositoryUri\&quot;: | grep /${imageName} | cut -d: -f2 | tr -d &apos; &apos; | tr -d &apos;&quot;&apos; | tr -d &apos;,&apos;`
+cat &lt;&lt; EOI &gt; docker-compose.yml
+version: &apos;2&apos;
+services:
+  getweather:
+    image: FULL_IMAGE_REPO_NAME:latest
+    environment:
+      ECS_AVAILABLE_LOGGING_DRIVERS: &apos;[&quot;json-file&quot;,&quot;awslogs&quot;]&apos;
+    logging:
+      driver: awslogs
+      options:
+        awslogs-region: us-west-2
+        awslogs-group: ewecs
+        awslogs-stream-prefix: IMAGE_NAME
+EOI
+sed -i &quot;s|FULL_IMAGE_REPO_NAME|${FULL_IMAGE_REPO_NAME}|&quot; docker-compose.yml
+sed -i &quot;s/IMAGE_NAME/${imageName}/&quot; docker-compose.yml
+/usr/local/bin/ecs-cli compose up
+</command>
+    </hudson.tasks.Shell>
+  </builders>
+  <publishers/>
+  <buildWrappers/>
+</project>

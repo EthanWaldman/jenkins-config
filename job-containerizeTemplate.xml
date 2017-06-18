@@ -1,0 +1,66 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<project>
+  <actions/>
+  <description>Containerize a previous build stored in Artifactory and deploy to Docker&#xd;
+</description>
+  <keepDependencies>false</keepDependencies>
+  <properties>
+    <hudson.model.ParametersDefinitionProperty>
+      <parameterDefinitions>
+        <hudson.model.StringParameterDefinition>
+          <name>appName</name>
+          <description></description>
+          <defaultValue>springsample</defaultValue>
+        </hudson.model.StringParameterDefinition>
+      </parameterDefinitions>
+    </hudson.model.ParametersDefinitionProperty>
+  </properties>
+  <scm class="hudson.scm.NullSCM"/>
+  <canRoam>true</canRoam>
+  <disabled>false</disabled>
+  <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
+  <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
+  <triggers/>
+  <concurrentBuild>false</concurrentBuild>
+  <builders>
+    <hudson.tasks.Shell>
+      <command>JAR_FILE=`curl l http://localhost:8081/artifactory/generic-local/${appName}/ | grep &apos;.jar&lt;&apos; | cut -d&apos;&gt;&apos; -f2 | cut -d&apos;&lt;&apos; -f1`
+curl -O &quot;http://localhost:8081/artifactory/generic-local/${appName}/${JAR_FILE}&quot;
+cat &gt; Dockerfile &lt;&lt; EOI
+# from centos base
+FROM docker.io/labengine/centos
+MAINTAINER Ethan ekwaldman@gmail.com
+#
+# Install Java 1.8 JRE
+RUN yum install -y java-1.8.0-openjdk
+ADD ${JAR_FILE} /
+EXPOSE 8080
+ENTRYPOINT java -jar /${JAR_FILE}
+EOI
+imageName=`echo ${appName} | tr &apos;[A-Z]&apos; &apos;[a-z]&apos;`
+export DOCKER_HOST=192.168.33.13:2375
+docker build -t ${imageName}:latest .
+</command>
+    </hudson.tasks.Shell>
+  </builders>
+  <publishers>
+    <hudson.plugins.parameterizedtrigger.BuildTrigger plugin="parameterized-trigger@2.33">
+      <configs>
+        <hudson.plugins.parameterizedtrigger.BuildTriggerConfig>
+          <configs>
+            <hudson.plugins.parameterizedtrigger.CurrentBuildParameters/>
+            <hudson.plugins.parameterizedtrigger.PredefinedBuildParameters>
+              <properties>jarFile=$JAR_FILE
+</properties>
+            </hudson.plugins.parameterizedtrigger.PredefinedBuildParameters>
+          </configs>
+          <projects>deployTemplate, </projects>
+          <condition>SUCCESS</condition>
+          <triggerWithNoParameters>false</triggerWithNoParameters>
+          <triggerFromChildProjects>false</triggerFromChildProjects>
+        </hudson.plugins.parameterizedtrigger.BuildTriggerConfig>
+      </configs>
+    </hudson.plugins.parameterizedtrigger.BuildTrigger>
+  </publishers>
+  <buildWrappers/>
+</project>

@@ -1,0 +1,43 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<project>
+  <actions/>
+  <description>Deploy a previously containerized app to Docker&#xd;
+</description>
+  <keepDependencies>false</keepDependencies>
+  <properties>
+    <hudson.model.ParametersDefinitionProperty>
+      <parameterDefinitions>
+        <hudson.model.StringParameterDefinition>
+          <name>appName</name>
+          <description></description>
+          <defaultValue>springsample</defaultValue>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>jarFile</name>
+          <description>Name of Jar file to execute at container start</description>
+          <defaultValue></defaultValue>
+        </hudson.model.StringParameterDefinition>
+      </parameterDefinitions>
+    </hudson.model.ParametersDefinitionProperty>
+  </properties>
+  <scm class="hudson.scm.NullSCM"/>
+  <canRoam>true</canRoam>
+  <disabled>false</disabled>
+  <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
+  <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
+  <triggers/>
+  <concurrentBuild>false</concurrentBuild>
+  <builders>
+    <hudson.tasks.Shell>
+      <command>PORT_NUM=`cat /var/tmp/port_directory | grep &quot;^${appName}:&quot; | cut -d: -f2`
+export DOCKER_HOST=192.168.33.13:2375
+imageName=`echo ${appName} | tr &apos;[A-Z]&apos; &apos;[a-z]&apos;`
+appGroup=&quot;weather&quot;
+LOGSTASH_ADDRESS=$(docker inspect --format &apos;{{ .NetworkSettings.IPAddress }}&apos; logstash-${appGroup})
+docker run -d --name ${appName} --log-driver=gelf --log-opt gelf-address=udp://$LOGSTASH_ADDRESS:12201 -p ${PORT_NUM}:8080 ${imageName}:latest java -jar /${jarFile}
+</command>
+    </hudson.tasks.Shell>
+  </builders>
+  <publishers/>
+  <buildWrappers/>
+</project>

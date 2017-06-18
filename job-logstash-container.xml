@@ -1,0 +1,69 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<project>
+  <actions/>
+  <description>Deploy a logstash container for a specified application (i.e. pulls appropriate logstash config file for the application from github)&#xd;
+</description>
+  <keepDependencies>false</keepDependencies>
+  <properties>
+    <hudson.model.ParametersDefinitionProperty>
+      <parameterDefinitions>
+        <hudson.model.ChoiceParameterDefinition>
+          <name>appName</name>
+          <description></description>
+          <choices class="java.util.Arrays$ArrayList">
+            <a class="string-array">
+              <string>weather</string>
+            </a>
+          </choices>
+        </hudson.model.ChoiceParameterDefinition>
+      </parameterDefinitions>
+    </hudson.model.ParametersDefinitionProperty>
+  </properties>
+  <scm class="hudson.plugins.git.GitSCM" plugin="git@3.1.0">
+    <configVersion>2</configVersion>
+    <userRemoteConfigs>
+      <hudson.plugins.git.UserRemoteConfig>
+        <url>https://github.com/EthanWaldman/logstash-$appName</url>
+        <credentialsId>GitHub</credentialsId>
+      </hudson.plugins.git.UserRemoteConfig>
+    </userRemoteConfigs>
+    <branches>
+      <hudson.plugins.git.BranchSpec>
+        <name>*/master</name>
+      </hudson.plugins.git.BranchSpec>
+    </branches>
+    <doGenerateSubmoduleConfigurations>false</doGenerateSubmoduleConfigurations>
+    <submoduleCfg class="list"/>
+    <extensions/>
+  </scm>
+  <assignedNode>docker</assignedNode>
+  <canRoam>false</canRoam>
+  <disabled>false</disabled>
+  <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
+  <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
+  <triggers/>
+  <concurrentBuild>false</concurrentBuild>
+  <builders>
+    <hudson.tasks.Shell>
+      <command>export DOCKER_HOST=192.168.33.13:2375
+CONTAINER_NAME=logstash-${appName}
+
+docker ps | grep ${CONTAINER_NAME} | cut -d&apos; &apos; -f1 | while read CONTAINER
+do
+docker stop $CONTAINER
+done
+
+docker ps -a | grep ${CONTAINER_NAME} | cut -d&apos; &apos; -f1 | while read CONTAINER
+do
+docker rm $CONTAINER
+done
+
+docker create --name ${CONTAINER_NAME} --link es:elasticsearch logstash logstash -f /etc/logstash/conf.d/logstash.conf
+docker cp *.conf ${CONTAINER_NAME}:/etc/logstash/conf.d/
+docker start ${CONTAINER_NAME}
+</command>
+    </hudson.tasks.Shell>
+  </builders>
+  <publishers/>
+  <buildWrappers/>
+</project>
