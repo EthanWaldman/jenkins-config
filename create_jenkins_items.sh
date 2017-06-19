@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-	JENKINS_CLI_CMD='java -jar /usr/local/share/applications/jenkins-cli.jar -s http://localhost:8080 -auth admin:`cat ~jenkins/secrets/initialAdminPassword`'
+	JENKINS_CLI_CMD="java -jar /usr/local/share/applications/jenkins-cli.jar -s http://localhost:8080 -auth admin:`cat ~jenkins/secrets/initialAdminPassword`"
 	for CONFIG_INPUT in *.xml
 	do
 		ITEM_TYPE=`basename ${CONFIG_INPUT} | cut -d'-' -f1`
