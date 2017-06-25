@@ -57,7 +57,7 @@ do
 docker rm $CONTAINER
 done
 
-docker create --name ${CONTAINER_NAME} --link es:elasticsearch logstash logstash -f /etc/logstash/conf.d/logstash.conf
+docker create --name ${CONTAINER_NAME} logstash logstash -f /etc/logstash/conf.d/logstash.conf
 docker cp *.conf ${CONTAINER_NAME}:/etc/logstash/conf.d/
 docker start ${CONTAINER_NAME}
 </command>
